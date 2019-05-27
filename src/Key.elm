@@ -11,6 +11,7 @@ type Key
     | HardDrop
     | LeftRotate
     | RightRotate
+    | Hold
     | Other
 
 
@@ -61,6 +62,12 @@ toKey code =
         27 ->
             -- Esc
             Pause
+
+        67 ->
+            Hold
+
+        16 ->
+            Hold
 
         _ ->
             Other

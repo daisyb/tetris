@@ -1,4 +1,4 @@
-module Grid exposing (Cell, Grid, checkForLines, clearLines, collision, fromList, initGrid, lowestCellInCollumn, mergeGrid, toList)
+module Grid exposing (Cell, Grid, checkForLines, clearLines, collision, empty, fromList, initGrid, lowestCellInCollumn, merge, toList)
 
 import Dict exposing (Dict)
 
@@ -13,6 +13,11 @@ type alias Cell =
 
 type alias Grid =
     Dict Coord Cell
+
+
+empty : Grid
+empty =
+    Dict.empty
 
 
 initGrid : String -> String -> Int -> Int -> Grid
@@ -70,8 +75,8 @@ toList g =
     Dict.toList g |> List.map (\( _, cell ) -> cell)
 
 
-mergeGrid : Grid -> Grid -> Grid
-mergeGrid g1 g2 =
+merge : Grid -> Grid -> Grid
+merge g1 g2 =
     Dict.union g1 g2
 
 

@@ -14,6 +14,7 @@ type alias Model =
         , width : Int
         }
     , current : Tetronimo
+    , hold : Maybe Int
     , tick : Float
     , paused : Bool
     , gameover : Bool
@@ -49,6 +50,7 @@ initModel =
         , width = width
         }
     , current = Tetronimo.fromInt 2
+    , hold = Nothing
     , tick = 1000
     , paused = False
     , gameover = False

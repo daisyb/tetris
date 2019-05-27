@@ -23,11 +23,7 @@ update msg model =
             movePiece Tetronimo.moveDown generateNextPiece model
 
         NextPiece t ->
-            let
-                m =
-                    updateBoard model
-            in
-            ( { m | current = t }
+            ( { model | current = t }
             , Cmd.none
             )
 
@@ -75,6 +71,14 @@ onKeyDown k m =
 
         Key.Pause ->
             ( { m | paused = not m.paused }, Cmd.none )
+
+        Key.Hold ->
+            case m.hold of
+                Nothing ->
+                    ( { m | hold = Just (Tetronimo.toInt m.current) }, generateNextPiece )
+
+                Just i ->
+                    ( { m | current = Tetronimo.fromInt i, hold = Just (Tetronimo.toInt m.current) }, Cmd.none )
 
         _ ->
             ( m, Cmd.none )
@@ -176,7 +180,7 @@ movePiece moveFunction collisionResponse model =
             moveFunction model.current
     in
     if checkForCollisions newCurrent model.board.grid then
-        ( model, collisionResponse )
+        ( model |> updateBoard, collisionResponse )
 
     else
         ( { model | current = newCurrent }, Cmd.none )
@@ -196,4 +200,4 @@ dropPiece m =
         newCurrent =
             Tetronimo.moveDownBy dropDist m.current
     in
-    ( { m | current = newCurrent }, generateNextPiece )
+    ( { m | current = newCurrent } |> updateBoard, generateNextPiece )

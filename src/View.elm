@@ -34,7 +34,41 @@ view model =
         , svg
             [ width "800", height "800", viewBox <| "0 0 " ++ boardWidth ++ " " ++ boardHeight ]
             board
+        , renderHoldSpace model
         ]
+
+
+renderHoldSpace : Model -> Html.Html msg
+renderHoldSpace model =
+    let
+        piece =
+            case model.hold of
+                Nothing ->
+                    Grid.empty
+
+                Just i ->
+                    i
+                        |> Tetronimo.fromInt
+                        |> Tetronimo.toGrid
+
+        coords =
+            List.concatMap
+                (\i -> List.map (\j -> ( i, j )) (List.range 0 3))
+                (List.range 0 3)
+
+        space =
+            Grid.fromList model.board.insideColor False coords
+                |> Grid.merge piece
+
+        spaceWidth =
+            String.fromInt <| 4 * model.board.cellSize
+
+        spaceHeight =
+            String.fromInt <| 4 * model.board.cellSize
+    in
+    svg
+        [ width "200", height "200", viewBox <| "0 0 " ++ spaceWidth ++ " " ++ spaceHeight ]
+        (renderBoard model.board.cellSize space)
 
 
 renderRect : Int -> Cell -> Svg msg

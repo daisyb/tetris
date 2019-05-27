@@ -1,4 +1,4 @@
-module Tetronimo exposing (Tetronimo, addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, toGrid)
+module Tetronimo exposing (Tetronimo, addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, toGrid, toInt)
 
 import Grid exposing (Grid)
 import Random exposing (Generator)
@@ -174,6 +174,31 @@ fromInt i =
             Debug.todo "fromInt unreachable line"
 
 
+toInt : Tetronimo -> Int
+toInt t =
+    case t.name of
+        I _ ->
+            0
+
+        O ->
+            1
+
+        T ->
+            2
+
+        J ->
+            3
+
+        L ->
+            4
+
+        S ->
+            5
+
+        Z ->
+            6
+
+
 rotI : Int -> List Coord
 rotI state =
     case state of
@@ -195,7 +220,7 @@ rotI state =
 
 initialY : Int
 initialY =
-    -2
+    -1
 
 
 initI : Tetronimo
