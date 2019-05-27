@@ -8,8 +8,15 @@ type alias Coord =
     ( Int, Int )
 
 
+type State
+    = One
+    | Two
+    | Three
+    | Four
+
+
 type TetronimoName
-    = I Int
+    = I
     | O
     | T
     | J
@@ -19,14 +26,23 @@ type TetronimoName
 
 
 type alias Tetronimo =
-    { name : TetronimoName, color : String, coords : List Coord, xoffset : Int, yoffset : Int, center : Coord }
+    { name : TetronimoName
+    , state : State
+    , coords : List Coord
+    , offset : Coord
+    , center : Coord
+    , color : String
+    }
 
 
 applyOffsets : Tetronimo -> Tetronimo
 applyOffsets t =
     let
+        ( x, y ) =
+            t.offset
+
         newCoords =
-            List.map (\( i, j ) -> ( i + t.xoffset, j + t.yoffset )) t.coords
+            List.map (\( i, j ) -> ( i + x, j + y )) t.coords
     in
     { t | coords = newCoords }
 
@@ -52,22 +68,38 @@ removeFromGrid color t g =
 
 moveDown : Tetronimo -> Tetronimo
 moveDown t =
-    { t | yoffset = t.yoffset + 1 }
+    let
+        ( x, y ) =
+            t.offset
+    in
+    { t | offset = ( x, y + 1 ) }
 
 
 moveDownBy : Int -> Tetronimo -> Tetronimo
 moveDownBy by t =
-    { t | yoffset = t.yoffset + by }
+    let
+        ( x, y ) =
+            t.offset
+    in
+    { t | offset = ( x, y + by ) }
 
 
 moveLeft : Tetronimo -> Tetronimo
 moveLeft t =
-    { t | xoffset = t.xoffset - 1 }
+    let
+        ( x, y ) =
+            t.offset
+    in
+    { t | offset = ( x - 1, y ) }
 
 
 moveRight : Tetronimo -> Tetronimo
 moveRight t =
-    { t | xoffset = t.xoffset + 1 }
+    let
+        ( x, y ) =
+            t.offset
+    in
+    { t | offset = ( x + 1, y ) }
 
 
 getCoords : Tetronimo -> List Coord
@@ -81,22 +113,18 @@ getCoords t =
 
 rotateRight : Tetronimo -> Tetronimo
 rotateRight t =
+    let
+        state =
+            prevState t.state
+    in
     case t.name of
         O ->
-            t
+            { t | state = state }
 
-        I x ->
-            let
-                x_ =
-                    if x == 3 then
-                        0
-
-                    else
-                        x + 1
-            in
+        I ->
             { t
-                | name = I x_
-                , coords = rotI x_
+                | state = state
+                , coords = rotI state
             }
 
         _ ->
@@ -107,28 +135,21 @@ rotateRight t =
                 rotCoord ( i, j ) =
                     ( xPivot + yPivot - j, yPivot - xPivot + i )
             in
-            { t | coords = List.map rotCoord t.coords }
+            { t | state = state, coords = List.map rotCoord t.coords }
 
 
 rotateLeft : Tetronimo -> Tetronimo
 rotateLeft t =
+    let
+        state =
+            nextState t.state
+    in
     case t.name of
         O ->
-            t
+            { t | state = state }
 
-        I x ->
-            let
-                x_ =
-                    if x == 0 then
-                        3
-
-                    else
-                        x - 1
-            in
-            { t
-                | name = I x_
-                , coords = rotI x_
-            }
+        I ->
+            { t | state = state, coords = rotI state }
 
         _ ->
             let
@@ -138,7 +159,7 @@ rotateLeft t =
                 rotCoord ( i, j ) =
                     ( xPivot - yPivot + j, yPivot + xPivot - i )
             in
-            { t | coords = List.map rotCoord t.coords }
+            { t | state = state, coords = List.map rotCoord t.coords }
 
 
 generator : Generator Tetronimo
@@ -174,23 +195,36 @@ fromInt i =
             Debug.todo "fromInt unreachable line"
 
 
-rotI : Int -> List Coord
-rotI state =
+nextState : State -> State
+nextState state =
     case state of
-        0 ->
-            [ ( 0, 0 ), ( 1, 0 ), ( 2, 0 ), ( 3, 0 ) ]
+        One ->
+            Two
 
-        1 ->
-            [ ( 2, -1 ), ( 2, 0 ), ( 2, 1 ), ( 2, 2 ) ]
+        Two ->
+            Three
 
-        2 ->
-            [ ( 0, 1 ), ( 1, 1 ), ( 2, 1 ), ( 3, 1 ) ]
+        Three ->
+            Four
 
-        3 ->
-            [ ( 1, -1 ), ( 1, 0 ), ( 1, 1 ), ( 1, 2 ) ]
+        Four ->
+            One
 
-        _ ->
-            Debug.todo "rotI unreachablexs"
+
+prevState : State -> State
+prevState state =
+    case state of
+        One ->
+            Four
+
+        Two ->
+            Three
+
+        Three ->
+            Two
+
+        Four ->
+            Three
 
 
 initialY : Int
@@ -198,9 +232,25 @@ initialY =
     -2
 
 
+rotI : State -> List Coord
+rotI state =
+    case state of
+        One ->
+            [ ( 0, 1 ), ( 1, 1 ), ( 2, 1 ), ( 3, 1 ) ]
+
+        Two ->
+            [ ( 2, 0 ), ( 2, 1 ), ( 2, 0 ), ( 2, 1 ) ]
+
+        Three ->
+            [ ( 0, 2 ), ( 1, 2 ), ( 2, 2 ), ( 3, 2 ) ]
+
+        Four ->
+            [ ( 1, 0 ), ( 1, 1 ), ( 1, 2 ), ( 1, 3 ) ]
+
+
 initI : Tetronimo
 initI =
-    { name = I 0, color = "cyan", coords = rotI 0, xoffset = 3, yoffset = initialY, center = ( 1, 1 ) }
+    { name = I, color = "cyan", state = One, coords = rotI One, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initO : Tetronimo
@@ -209,7 +259,7 @@ initO =
         coords =
             [ ( 0, 0 ), ( 1, 0 ), ( 0, 1 ), ( 1, 1 ) ]
     in
-    { name = O, color = "yellow", coords = coords, center = ( 1, 0 ), yoffset = initialY, xoffset = 4 }
+    { name = O, state = One, color = "yellow", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initT : Tetronimo
@@ -218,7 +268,7 @@ initT =
         coords =
             [ ( 0, 1 ), ( 1, 1 ), ( 2, 1 ), ( 1, 0 ) ]
     in
-    { name = T, color = "purple", coords = coords, xoffset = 3, yoffset = initialY, center = ( 1, 1 ) }
+    { name = T, state = One, color = "purple", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initJ : Tetronimo
@@ -227,7 +277,7 @@ initJ =
         coords =
             [ ( 0, 0 ), ( 0, 1 ), ( 1, 1 ), ( 2, 1 ) ]
     in
-    { name = T, color = "blue", coords = coords, yoffset = initialY, xoffset = 3, center = ( 1, 1 ) }
+    { name = T, state = One, color = "blue", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initL : Tetronimo
@@ -236,7 +286,7 @@ initL =
         coords =
             [ ( 2, 0 ), ( 0, 1 ), ( 1, 1 ), ( 2, 1 ) ]
     in
-    { name = L, color = "orange", coords = coords, xoffset = 3, yoffset = initialY, center = ( 1, 1 ) }
+    { name = L, state = One, color = "orange", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initS : Tetronimo
@@ -245,7 +295,7 @@ initS =
         coords =
             [ ( 1, 0 ), ( 2, 0 ), ( 0, 1 ), ( 1, 1 ) ]
     in
-    { name = S, color = "green", coords = coords, xoffset = 3, yoffset = initialY, center = ( 1, 1 ) }
+    { name = S, state = One, color = "green", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
 
 
 initZ : Tetronimo
@@ -254,4 +304,23 @@ initZ =
         coords =
             [ ( 0, 0 ), ( 1, 0 ), ( 1, 1 ), ( 2, 1 ) ]
     in
-    { name = Z, color = "red", coords = coords, xoffset = 3, yoffset = initialY, center = ( 1, 1 ) }
+    { name = Z, state = One, color = "red", coords = coords, offset = ( 3, initialY ), center = ( 1, 1 ) }
+
+
+
+-- J : State -> List Coord
+-- J state =
+--     case state of
+--         One, ->
+--             [(0,0), (0,1) (1,1), (2,1)]
+--         Two ->
+--             [(1,0), (2,0), (1,1), (1,2)]
+--         Three ->
+--             [(0,1), (1,1), (2,1), (2,2)]
+--         Four ->
+--             [(2,0), (2,1), (1,1), (0,1)]
+-- L : State -> List Coord
+-- L state =
+--     case state of
+--         One, -> [(0,1), (1,1), (2,1), (2,0)]
+--         Two - >
