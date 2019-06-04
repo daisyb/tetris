@@ -20,12 +20,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick ->
-            movePiece Tetronimo.moveDown generateNextPiece model
+            movePiece Tetronimo.moveDown True model
 
         NextPiece t ->
-            ( { model | current = t }
-            , Cmd.none
-            )
+            ( { model | current = t }, Cmd.none )
 
         KeyDown k ->
             onKeyDown k model
@@ -52,33 +50,28 @@ onKeyDown : Key -> Model -> ( Model, Cmd Msg )
 onKeyDown k m =
     case k of
         Key.Left ->
-            movePiece Tetronimo.moveLeft Cmd.none m
+            movePiece Tetronimo.moveLeft False m
 
         Key.Right ->
-            movePiece Tetronimo.moveRight Cmd.none m
+            movePiece Tetronimo.moveRight False m
 
         Key.Down ->
-            movePiece Tetronimo.moveDown Cmd.none m
+            movePiece Tetronimo.moveDown True m
 
         Key.HardDrop ->
             dropPiece m
 
         Key.RightRotate ->
-            movePiece Tetronimo.rotateRight Cmd.none m
+            movePiece Tetronimo.rotateRight False m
 
         Key.LeftRotate ->
-            movePiece Tetronimo.rotateLeft Cmd.none m
+            movePiece Tetronimo.rotateLeft False m
 
         Key.Pause ->
             ( { m | paused = not m.paused }, Cmd.none )
 
         Key.Hold ->
-            case m.hold of
-                Nothing ->
-                    ( { m | hold = Just (Tetronimo.toInt m.current) }, generateNextPiece )
-
-                Just i ->
-                    ( { m | current = Tetronimo.fromInt i, hold = Just (Tetronimo.toInt m.current) }, Cmd.none )
+            hold m
 
         _ ->
             ( m, Cmd.none )
@@ -173,14 +166,18 @@ checkForCollisions t g =
     t |> Tetronimo.getCoords |> List.foldl (\k -> (||) (Grid.collision k g)) False
 
 
-movePiece : (Tetronimo -> Tetronimo) -> Cmd Msg -> Model -> ( Model, Cmd Msg )
-movePiece moveFunction collisionResponse model =
+movePiece : (Tetronimo -> Tetronimo) -> Bool -> Model -> ( Model, Cmd Msg )
+movePiece moveFunction updateOnCollision model =
     let
         newCurrent =
             moveFunction model.current
     in
     if checkForCollisions newCurrent model.board.grid then
-        ( model |> updateBoard, collisionResponse )
+        if updateOnCollision then
+            ( model |> updateBoard, generateNextPiece )
+
+        else
+            ( model, Cmd.none )
 
     else
         ( { model | current = newCurrent }, Cmd.none )
@@ -201,3 +198,18 @@ dropPiece m =
             Tetronimo.moveDownBy dropDist m.current
     in
     ( { m | current = newCurrent } |> updateBoard, generateNextPiece )
+
+
+hold : Model -> ( Model, Cmd Msg )
+hold m =
+    case m.hold of
+        Nothing ->
+            ( { m | hold = Just (Tetronimo.toInt m.current) }, generateNextPiece )
+
+        Just i ->
+            ( { m
+                | current = Tetronimo.fromInt i
+                , hold = Just (Tetronimo.toInt m.current)
+              }
+            , Cmd.none
+            )

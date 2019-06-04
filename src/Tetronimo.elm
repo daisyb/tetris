@@ -1,4 +1,4 @@
-module Tetronimo exposing (Tetronimo, addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, toGrid, toInt)
+module Tetronimo exposing (Tetronimo, TetronimoName(..), addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, setOffset, toGrid, toInt)
 
 import Grid exposing (Grid)
 import Random exposing (Generator)
@@ -42,12 +42,12 @@ toGrid t =
 
 addToGrid : Tetronimo -> Grid -> Grid
 addToGrid t g =
-    Grid.mergeGrid (toGrid t) g
+    Grid.merge (toGrid t) g
 
 
 removeFromGrid : String -> Tetronimo -> Grid -> Grid
 removeFromGrid color t g =
-    Grid.mergeGrid (Grid.fromList color False t.coords) g
+    Grid.merge (Grid.fromList color False t.coords) g
 
 
 moveDown : Tetronimo -> Tetronimo
@@ -68,6 +68,11 @@ moveLeft t =
 moveRight : Tetronimo -> Tetronimo
 moveRight t =
     { t | xoffset = t.xoffset + 1 }
+
+
+setOffset : Int -> Int -> Tetronimo -> Tetronimo
+setOffset x y t =
+    { t | xoffset = x, yoffset = y }
 
 
 getCoords : Tetronimo -> List Coord
@@ -220,7 +225,7 @@ rotI state =
 
 initialY : Int
 initialY =
-    -1
+    0
 
 
 initI : Tetronimo
@@ -252,7 +257,7 @@ initJ =
         coords =
             [ ( 0, 0 ), ( 0, 1 ), ( 1, 1 ), ( 2, 1 ) ]
     in
-    { name = T, color = "blue", coords = coords, yoffset = initialY, xoffset = 3, center = ( 1, 1 ) }
+    { name = J, color = "blue", coords = coords, yoffset = initialY, xoffset = 3, center = ( 1, 1 ) }
 
 
 initL : Tetronimo
