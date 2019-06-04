@@ -4,6 +4,7 @@ import Grid exposing (Cell, Grid)
 import Html exposing (Html)
 import Html.Attributes
 import Model exposing (Model)
+import Style
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Tetronimo
@@ -23,18 +24,21 @@ view model =
                 ++ renderBoard model.board.cellSize (Tetronimo.toGrid model.current)
     in
     Html.div
-        [ Html.Attributes.style "text-align" "center"
-        , Html.Attributes.style "width" "100%"
-        , Html.Attributes.style "height" "100%"
-        , Html.Attributes.style "position" "absolute"
-        , Html.Attributes.style "top" "0"
-        , Html.Attributes.style "left" "0"
-        ]
-        [ Html.text ("Level: " ++ String.fromInt model.levelStatus.level ++ "  Score: " ++ String.fromInt model.score)
-        , svg
-            [ width "800", height "800", viewBox <| "0 0 " ++ boardWidth ++ " " ++ boardHeight ]
-            board
-        , renderHoldSpace model
+        Style.gridContainer
+        [ Html.div
+            Style.mainContainer
+            [ Html.div
+                Style.leftPanel
+                [ renderHoldSpace model
+                , Html.text ("Level: " ++ String.fromInt model.levelStatus.level ++ "  Score: " ++ String.fromInt model.score)
+                ]
+            , Html.div
+                []
+                [ svg
+                    [ width "800", height "800", viewBox <| "0 0 " ++ boardWidth ++ " " ++ boardHeight ]
+                    board
+                ]
+            ]
         ]
 
 
@@ -47,28 +51,46 @@ renderHoldSpace model =
                     Grid.empty
 
                 Just i ->
-                    i
-                        |> Tetronimo.fromInt
-                        |> Tetronimo.toGrid
+                    let
+                        t =
+                            Tetronimo.fromInt i
+
+                        t_ =
+                            case t.name of
+                                Tetronimo.O ->
+                                    Tetronimo.setOffset 1.5 1.5 t
+
+                                Tetronimo.I _ ->
+                                    Tetronimo.setOffset 0.5 1.5 t
+
+                                _ ->
+                                    Tetronimo.setOffset 0 1 t
+                    in
+                    Tetronimo.toGrid t_
 
         coords =
             List.concatMap
-                (\i -> List.map (\j -> ( i, j )) (List.range 0 3))
-                (List.range 0 3)
+                (\i -> List.map (\j -> ( i, j )) (List.range 0 4))
+                (List.range 0 4)
 
         space =
             Grid.fromList model.board.insideColor False coords
                 |> Grid.merge piece
 
         spaceWidth =
-            String.fromInt <| 4 * model.board.cellSize
+            String.fromInt <| 5 * model.board.cellSize
 
         spaceHeight =
-            String.fromInt <| 4 * model.board.cellSize
+            String.fromInt <| 5 * model.board.cellSize
     in
-    svg
-        [ width "200", height "200", viewBox <| "0 0 " ++ spaceWidth ++ " " ++ spaceHeight ]
-        (renderBoard model.board.cellSize space)
+    Html.div
+        Style.holdSpace
+        [ svg
+            ([ width "200", height "200", viewBox <| "0 0 " ++ spaceWidth ++ " " ++ spaceHeight ]
+                ++ Style.style [ ( "display", "block" ), ( "margin", "auto" ) ]
+            )
+            (renderBoard model.board.cellSize piece)
+        ]
 
 
 renderRect : Int -> Cell -> Svg msg
