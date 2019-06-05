@@ -1,4 +1,4 @@
-module Tetronimo exposing (Tetronimo, TetronimoName(..), addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, setOffset, toGrid, toInt)
+module Tetronimo exposing (Tetronimo, addToGrid, fromInt, generator, getCoords, moveDown, moveDownBy, moveLeft, moveRight, rotateLeft, rotateRight, setOffset, toGrid, toInt)
 
 import Grid exposing (Grid)
 import Random exposing (Generator)
@@ -225,7 +225,7 @@ rotI state =
 
 initialY : Int
 initialY =
-    0
+    -1
 
 
 initI : Tetronimo
