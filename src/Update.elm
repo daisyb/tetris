@@ -1,10 +1,10 @@
-module Update exposing (Msg, checkForCollisions, movePiece, subscriptions, update)
+module Update exposing (Msg(..), checkForCollisions, movePiece, subscriptions, update)
 
 import Browser.Events
 import Grid exposing (Grid)
 import Json.Decode as Decode
 import Key exposing (Key)
-import Model exposing (Model)
+import Model exposing (Model, initModel)
 import Random
 import Tetronimo exposing (Tetronimo)
 import Time
@@ -14,30 +14,73 @@ type Msg
     = Tick
     | NextPiece Tetronimo
     | KeyDown Key
+    | Pause
+    | Update
+    | NewGame
+    | Start
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick ->
-            movePiece Tetronimo.moveDown True model
+            if checkForCollisions (Tetronimo.moveDown model.current) model.board.grid then
+                update Update model
+
+            else
+                movePiece Tetronimo.moveDown model
 
         NextPiece t ->
-            ( { model | current = t }, Cmd.none )
+            let
+                holdWait =
+                    if model.holdWait > 0 then
+                        model.holdWait - 1
+
+                    else
+                        model.holdWait
+            in
+            ( { model | current = t, holdWait = holdWait }, Cmd.none )
 
         KeyDown k ->
             onKeyDown k model
+
+        Pause ->
+            ( { model | paused = not model.paused }, Cmd.none )
+
+        Update ->
+            let
+                m =
+                    updateBoard model
+            in
+            if m.gameover then
+                ( m, Cmd.none )
+
+            else
+                ( m, generateNextPiece )
+
+        NewGame ->
+            ( initModel, Cmd.none )
+
+        Start ->
+            ( { model | start = True }, generateNextPiece )
+
+
+checkConditions : Model -> Sub Msg -> Sub Msg
+checkConditions model msg =
+    if model.paused || model.gameover || not model.start then
+        Sub.none
+
+    else
+        msg
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ if model.paused || model.gameover then
-            Sub.none
-
-          else
-            Time.every model.tick (\_ -> Tick)
-        , Browser.Events.onKeyDown (Decode.map KeyDown Key.keyDecoder)
+        [ checkConditions model
+            (Time.every model.tick (\_ -> Tick))
+        , checkConditions model
+            (Browser.Events.onKeyDown (Decode.map KeyDown Key.keyDecoder))
         ]
 
 
@@ -50,25 +93,25 @@ onKeyDown : Key -> Model -> ( Model, Cmd Msg )
 onKeyDown k m =
     case k of
         Key.Left ->
-            movePiece Tetronimo.moveLeft False m
+            movePiece Tetronimo.moveLeft m
 
         Key.Right ->
-            movePiece Tetronimo.moveRight False m
+            movePiece Tetronimo.moveRight m
 
         Key.Down ->
-            movePiece Tetronimo.moveDown True m
+            softDrop m
 
         Key.HardDrop ->
-            dropPiece m
+            hardDrop m
 
         Key.RightRotate ->
-            movePiece Tetronimo.rotateRight False m
+            movePiece Tetronimo.rotateRight m
 
         Key.LeftRotate ->
-            movePiece Tetronimo.rotateLeft False m
+            movePiece Tetronimo.rotateLeft m
 
         Key.Pause ->
-            ( { m | paused = not m.paused }, Cmd.none )
+            update Pause m
 
         Key.Hold ->
             hold m
@@ -79,47 +122,52 @@ onKeyDown k m =
 
 updateScore : Int -> Model -> Model
 updateScore numLines m =
-    let
-        linesCleared =
-            m.levelStatus.lines
-                + (case numLines of
-                    1 ->
-                        1
-
-                    2 ->
-                        3
-
-                    3 ->
-                        5
-
-                    4 ->
-                        8
-
-                    _ ->
-                        0
-                  )
-
-        level =
-            m.levelStatus.level
-
-        score =
-            level * 100 * linesCleared
-
-        linesToClear =
-            level * 5
-    in
-    if linesCleared >= linesToClear then
-        { m
-            | score = score
-            , levelStatus = { level = level + 1, lines = linesCleared - linesToClear }
-            , tick = m.tick - (m.tick / 4)
-        }
+    if numLines == 0 then
+        m
 
     else
-        { m
-            | score = score
-            , levelStatus = { level = level, lines = linesCleared }
-        }
+        let
+            linesCleared =
+                m.levelStatus.lines
+                    + (case numLines of
+                        1 ->
+                            1
+
+                        2 ->
+                            3
+
+                        3 ->
+                            5
+
+                        4 ->
+                            8
+
+                        _ ->
+                            0
+                      )
+
+            level =
+                m.levelStatus.level
+
+            score =
+                m.score + level * 100 * linesCleared
+
+            linesToClear =
+                level * 5
+        in
+        if linesCleared >= linesToClear then
+            --next level
+            { m
+                | score = score
+                , levelStatus = { level = level + 1, lines = linesCleared - linesToClear }
+                , tick = m.tick - (m.tick / 4.5)
+            }
+
+        else
+            { m
+                | score = score
+                , levelStatus = { level = level, lines = linesCleared }
+            }
 
 
 updateBoard : Model -> Model
@@ -143,9 +191,9 @@ updateBoard m =
                 |> Grid.clearLines board.insideColor board.outsideColor board.width lines
 
         gameover =
-            checkForGameOver board.width board.grid
+            checkForGameOver board.width newGrid
     in
-    { m | board = { board | grid = newGrid } }
+    { m | board = { board | grid = newGrid }, gameover = gameover }
         |> updateScore numLines
 
 
@@ -166,25 +214,34 @@ checkForCollisions t g =
     t |> Tetronimo.getCoords |> List.foldl (\k -> (||) (Grid.collision k g)) False
 
 
-movePiece : (Tetronimo -> Tetronimo) -> Bool -> Model -> ( Model, Cmd Msg )
-movePiece moveFunction updateOnCollision model =
+movePiece : (Tetronimo -> Tetronimo) -> Model -> ( Model, Cmd Msg )
+movePiece moveFunction model =
     let
         newCurrent =
             moveFunction model.current
     in
     if checkForCollisions newCurrent model.board.grid then
-        if updateOnCollision then
-            ( model |> updateBoard, generateNextPiece )
-
-        else
-            ( model, Cmd.none )
+        ( model, Cmd.none )
 
     else
         ( { model | current = newCurrent }, Cmd.none )
 
 
-dropPiece : Model -> ( Model, Cmd Msg )
-dropPiece m =
+softDrop : Model -> ( Model, Cmd Msg )
+softDrop m =
+    let
+        newCurrent =
+            Tetronimo.moveDown m.current
+    in
+    if checkForCollisions newCurrent m.board.grid then
+        update Update m
+
+    else
+        ( { m | current = newCurrent, score = m.score + 1 }, Cmd.none )
+
+
+hardDrop : Model -> ( Model, Cmd Msg )
+hardDrop m =
     let
         lowestFilled col =
             Grid.lowestCellInCollumn m.board.height m.board.grid col
@@ -197,19 +254,24 @@ dropPiece m =
         newCurrent =
             Tetronimo.moveDownBy dropDist m.current
     in
-    ( { m | current = newCurrent } |> updateBoard, generateNextPiece )
+    update Update { m | current = newCurrent, score = m.score + 2 * dropDist }
 
 
 hold : Model -> ( Model, Cmd Msg )
 hold m =
     case m.hold of
         Nothing ->
-            ( { m | hold = Just (Tetronimo.toInt m.current) }, generateNextPiece )
+            ( { m | hold = Just (Tetronimo.toInt m.current), holdWait = 1 }, generateNextPiece )
 
         Just i ->
-            ( { m
-                | current = Tetronimo.fromInt i
-                , hold = Just (Tetronimo.toInt m.current)
-              }
-            , Cmd.none
-            )
+            if m.holdWait > 0 then
+                ( m, Cmd.none )
+
+            else
+                ( { m
+                    | current = Tetronimo.fromInt i
+                    , hold = Just (Tetronimo.toInt m.current)
+                    , holdWait = 1
+                  }
+                , Cmd.none
+                )
