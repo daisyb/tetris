@@ -18,6 +18,7 @@ mainContainer =
     style
         [ ( "display", "flex" )
         , ( "justify-content", "center" )
+        , ( "margin-top", "20px" )
         ]
 
 
@@ -30,6 +31,8 @@ body =
         , ( "position", "absolute" )
         , ( "top", "0" )
         , ( "left", "0" )
+        , ( "font-family", "Sigmar One, helvetica, monospace" )
+        , ( "color", "white" )
         ]
 
 
@@ -76,7 +79,6 @@ scoreText =
         , ( "text-align", "left" )
         , ( "margin", "30px" )
         , ( "color", "white" )
-        , ( "font-family", "Sigmar One, helvetica, monospace" )
         ]
 
 
@@ -96,7 +98,7 @@ pauseMenu : Css msg
 pauseMenu =
     style
         [ ( "width", "220px" )
-        , ( "height", "320px" )
+        , ( "height", "330px" )
         , ( "top", "25%" )
         , ( "left", "50%" )
         , ( "text-align", "center" )
@@ -126,6 +128,9 @@ menuText : Css msg
 menuText =
     style
         [ ( "color", "black" )
+        , ( "padding", "0px" )
+        , ( "marign", "0px" )
+        , ( "font-size", "25px" )
         ]
 
 
@@ -137,7 +142,7 @@ menuButton =
         , ( "border", "3px double #797b7f" )
         , ( "border-radius", "10px" )
         , ( "margin", "10px" )
-        , ( "padding", "5px 0px 5px 0px" )
+        , ( "padding", "3px 0px 3px 0px" )
         , ( "font-size", "25px" )
         , ( "cursor", "pointer" )
         ]

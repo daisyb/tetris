@@ -8,7 +8,14 @@ type alias Coord =
 
 
 type alias Cell =
-    { color : String, filled : Bool, x : Int, y : Int }
+    { color : String
+    , -- color of cell
+      filled : Bool
+    , -- whether cell has a piece in it or not
+      x : Int
+    , -- x coord in grid
+      y : Int -- y coord in grid
+    }
 
 
 type alias Grid =

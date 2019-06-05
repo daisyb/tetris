@@ -36,6 +36,7 @@ view model =
                 Style.leftPanel
                 [ renderHoldSpace model
                 , renderScoreBox model
+                , pauseButton model
                 ]
             , Html.div
                 []
@@ -44,6 +45,18 @@ view model =
                     [ width "600", height "800", viewBox <| "0 0 " ++ boardWidth ++ " " ++ boardHeight ]
                     board
                 ]
+            ]
+        , Html.div []
+            [ Html.audio
+                [ id "roar"
+
+                -- src can be a local file too.
+                , Html.Attributes.src "theme.mp3"
+                , Html.Attributes.controls True
+                , Html.Attributes.autoplay True
+                , Html.Attributes.loop True
+                ]
+                []
             ]
         ]
 
@@ -63,6 +76,27 @@ popup m =
         Html.div [] []
 
 
+pauseButton : Model -> Html Msg
+pauseButton model =
+    if model.start && not model.gameover then
+        let
+            text =
+                if model.paused then
+                    "Resume"
+
+                else
+                    "Pause"
+        in
+        Html.div
+            (Style.menuButton
+                ++ [ onClick Pause ]
+            )
+            [ Html.text text ]
+
+    else
+        Html.div [] []
+
+
 pauseMenu : Int -> Int -> Html Msg
 pauseMenu score level =
     Html.div
@@ -72,10 +106,13 @@ pauseMenu score level =
             [ Html.text "paused" ]
         , Html.div
             Style.menuText
-            [ Html.text <| "Score:" ++ String.fromInt score ]
+            [ Html.text "Score:" ]
         , Html.div
             Style.menuText
-            [ Html.text <| "Level:" ++ String.fromInt level ]
+            [ Html.text <| String.fromInt score ]
+        , Html.div
+            Style.menuText
+            [ Html.text <| "Level: " ++ String.fromInt level ]
         , Html.div
             (Style.menuButton
                 ++ [ onClick Pause ]
@@ -167,7 +204,14 @@ renderHoldSpace model =
     in
     Html.div
         Style.holdSpace
-        [ Html.div (Style.style [ ( "font-family", "Sigmar One, helvetica, monospace" ), ( "color", "white" ), ( "font-size", "30px" ) ]) [ Html.text "Hold" ]
+        [ Html.div
+            (Style.style
+                [ ( "font-family", "Sigmar One, helvetica, monospace" )
+                , ( "color", "white" )
+                , ( "font-size", "30px" )
+                ]
+            )
+            [ Html.text "Hold" ]
         , svg
             [ width "200", height "200", viewBox <| "0 0 " ++ spaceWidth ++ " " ++ spaceHeight ]
             (renderBoard model.board.cellSize piece)

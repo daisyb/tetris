@@ -76,12 +76,11 @@ checkConditions model msg =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ checkConditions model
-            (Time.every model.tick (\_ -> Tick))
-        , checkConditions model
-            (Browser.Events.onKeyDown (Decode.map KeyDown Key.keyDecoder))
-        ]
+    checkConditions model <|
+        Sub.batch
+            [ Time.every model.tick (\_ -> Tick)
+            , Browser.Events.onKeyDown (Decode.map KeyDown Key.keyDecoder)
+            ]
 
 
 generateNextPiece : Cmd Msg
